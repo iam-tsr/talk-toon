@@ -1,7 +1,7 @@
 import os
 import requests
 
-from .config import gnani_settings
+from src.config import gnani_settings
 
 url = "https://api.vachana.ai/api/v1/tts/voice-clone/embeddings"
 
