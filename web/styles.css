@@ -460,12 +460,6 @@ h2 {
   font-weight: 500;
 }
 
-#recording-time {
-  color: var(--muted);
-  letter-spacing: .05em;
-  font-variant-numeric: tabular-nums;
-}
-
 .waveform-display {
   position: relative;
   height: 61px;

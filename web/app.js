@@ -7,7 +7,6 @@ const recordLabel = document.querySelector('#record-label');
 const selectedName = document.querySelector('#selected-name');
 const recordingHint = document.querySelector('#recording-limit');
 const panel = document.querySelector('#recording-panel');
-const timer = document.querySelector('#recording-time');
 const canvas = document.querySelector('#waveform');
 const waveformState = document.querySelector('#waveform-state');
 const connection = document.querySelector('#connection-status');
@@ -16,8 +15,6 @@ const idleSamples = new Uint8Array(256).fill(128);
 
 let selected = personaButtons.find(button => button.getAttribute('aria-checked') === 'true') || personaButtons[0];
 let state = 'idle';
-let startedAt = 0;
-let clock;
 let replySamples;
 let replySampleRate;
 let playbackFrame;
@@ -123,16 +120,6 @@ for (const button of personaButtons) {
 }
 selectPersona(selected);
 
-function clearClock() {
-  window.clearInterval(clock);
-  clock = undefined;
-}
-
-function updateClock() {
-  const seconds = Math.min(30, Math.floor((performance.now() - startedAt) / 1000));
-  timer.textContent = `0:${String(seconds).padStart(2, '0')} / 0:30`;
-}
-
 function microphoneError(error) {
   const messages = {
     NotAllowedError: 'Microphone access was denied. Allow it in your browser’s site settings, then try again.',
@@ -144,7 +131,6 @@ function microphoneError(error) {
 }
 
 function showError(message) {
-  clearClock();
   render('idle', 'Let’s try that again', message, true);
 }
 
@@ -154,8 +140,6 @@ const recorder = new VoiceRecorder({
   },
   onSpeechStart() {
     speechStarted = true;
-    startedAt = performance.now();
-    clock = window.setInterval(updateClock, 200);
     if (state === 'recording') {
       render('recording', 'Voice detected. Go ahead…', 'Pause for a moment to send automatically. Stop discards this recording.');
     }
@@ -167,7 +151,6 @@ const recorder = new VoiceRecorder({
     if (state === 'recording') void finishRecording();
   },
   onError(error) {
-    clearClock();
     void recorder.cancel();
     clearReply();
     if (!leaving) showError(microphoneError(error));
@@ -193,7 +176,6 @@ async function startRecording() {
   speechStarted = false;
   render('requesting', 'One little permission…', 'Allow microphone access to begin, or press Stop to cancel.');
   clearReply();
-  timer.textContent = '0:00 / 0:30';
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) throw new Error('This browser does not support voice conversations.');
@@ -212,19 +194,15 @@ async function startRecording() {
 
 async function cancelRecording() {
   ++turnId;
-  clearClock();
   const canceled = recorder.cancel();
   clearReply();
   render('idle', 'Recording stopped', 'Your captured audio was discarded and was not sent.');
-  timer.textContent = '0:00 / 0:30';
   await canceled;
 }
 
 async function finishRecording() {
   if (state !== 'recording') return;
   const thisTurn = turnId;
-  clearClock();
-  updateClock();
   const persona = selected.dataset.persona;
   const name = selected.dataset.name;
   render('processing', `${name} is thinking…`, 'Turning your words into a reply. The microphone is off.');
@@ -314,7 +292,6 @@ void checkHealth();
 window.addEventListener('pagehide', () => {
   leaving = true;
   ++turnId;
-  clearClock();
   void recorder.cancel();
   requestController?.abort();
   clearReply();
