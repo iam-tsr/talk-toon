@@ -32,8 +32,7 @@ def health() -> dict[str, str]:
 @app.post("/talk", response_class=Response, responses={200: {"content": {"audio/wav": {}}}})
 def talk(
     audio_file: Annotated[UploadFile, File()],
-    persona: Annotated[str, Form()] = "jack-sparrow",
-    language_code: Annotated[str, Form()] = "indic-auto",
+    persona: Annotated[str, Form()] = "jack-sparrow"
 ) -> Response:
     if persona not in PERSONAS:
         raise HTTPException(status_code=422, detail=f"Unknown persona. Choose from: {', '.join(PERSONAS)}")
@@ -43,7 +42,7 @@ def talk(
             audio_path = Path(directory) / (Path(audio_file.filename or "audio.wav").name or "audio.wav")
             with audio_path.open("wb") as destination:
                 shutil.copyfileobj(audio_file.file, destination)
-            result = transcribe(audio_path, language_code=language_code)
+            result = transcribe(audio_path)
 
         transcript = result["transcript"]
         if not transcript.strip():
