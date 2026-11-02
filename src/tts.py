@@ -1,18 +1,13 @@
-import json
-
 import requests
 
 from .config import gnani_settings
 
 
 def clone_voice_tts(embedding, text):
-    with embedding.open(encoding="utf-8") as f:
-        embedding_data = json.load(f)
-
     payload = {
         "text": text,
         "model": "vachana-vc-v1",
-        "speaker_embedding": embedding_data["data"]["voice_clone_embedding"],
+        "speaker_embedding": embedding["data"]["voice_clone_embedding"],
         "audio_config": {
             "sample_rate": 44100,
             "num_channels": 1,
@@ -35,8 +30,8 @@ def clone_voice_tts(embedding, text):
         )
         response.raise_for_status()
     except requests.HTTPError as exc:
-        raise SystemExit(f"Gnani TTS failed (HTTP {response.status_code}): {response.text}") from exc
+        raise RuntimeError(f"Gnani TTS failed (HTTP {response.status_code}): {response.text}") from exc
     except requests.RequestException as exc:
-        raise SystemExit(f"Gnani TTS request failed: {exc}") from exc
+        raise RuntimeError(f"Gnani TTS request failed: {exc}") from exc
 
     return response.content
