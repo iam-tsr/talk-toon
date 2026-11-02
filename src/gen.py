@@ -1,18 +1,20 @@
-from sarvamai import SarvamAI
+from openai import OpenAI
 
-from .config import sarvam_settings
+from .config import llm_settings
 
-client = SarvamAI(api_subscription_key=sarvam_settings.api_key)
+client = OpenAI(
+    api_key=llm_settings.api_key,
+    base_url=llm_settings.base_url
+)
 
 def reasoning(system_prompt: str, user_prompt: str):
-    response = client.chat.completions(
-        model="sarvam-105b-conversations",
+    response = client.chat.completions.create(
+        model=llm_settings.model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ],
         temperature=1,
-        top_p=1,
         max_tokens=100,
     )
 

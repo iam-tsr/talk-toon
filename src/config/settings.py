@@ -6,10 +6,12 @@ class GnaniSettings(BaseSettings):
 
     api_key: str
 
-class SarvamSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_prefix="SARVAM_", extra="ignore")
+class LLMSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="LLM_", extra="ignore")
 
     api_key: str
+    base_url: str
+    model: str
 
 gnani_settings = GnaniSettings()
-sarvam_settings = SarvamSettings()
+llm_settings = LLMSettings()
