@@ -2,9 +2,9 @@ from pathlib import Path
 
 from src.tts import clone_voice_tts
 
-embed = Path(__file__).resolve().parents[1] / "src" / "voice-embed" / "deadpool-embedding.json"
+embed = Path(__file__).resolve().parents[1] / "src" / "voice-embed" / "doremon-embedding.json"
 output_path = Path("output.wav")
-text = "अरे यार, नाम है वेड। डेडपूल, अगर किसी फिल्म के पोस्टर पर देखना हो तो। बाकी जो भी है, बस एक भाड़े का लड़ाका हूँ जो अपनी ही बातों में उलझ जाता है। सच बताऊँ तो कभी-कभी खुद ही भूल जाता हूँ कि आखिर मैं हूँ कौन। तुम बताओ, तुम्हारा क्या सीन है?"
+text = "अरे, समय में पीछे जाना सुनने में बड़ा मजेदार लगता है, पर ऐसा कोई गैजेट नहीं है जो असल जिंदगी में काम आए। मेरी जेब में बहुत सी चीज़ें हैं, पर पुरानी बातों को बदलने या भविष्य देखने का कोई सुरक्षित तरीका नहीं है। अगर तुम्हें किसी ऐतिहासिक जगह के बारे में जानना है, तो हम कोई अच्छी सी किताब पढ़ सकते हैं या इंटरनेट पर खोज कर सकते हैं"
 output = clone_voice_tts(embed, text)
 
 output_path.write_bytes(output)
