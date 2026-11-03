@@ -6,7 +6,7 @@
 
 **Hindi-first voice chat · Character-inspired voices · Conversation memory**
 
-[Get started](#get-started) · [Meet the cast](#meet-the-cast) · [How it works](#how-it-works) · [API](#api)
+[Get started](#get-started) · [Meet the cast](#meet-the-cast) · [How it works](#how-it-works) · [API](#api) · [LICENSE](#license)
 
 </div>
 
