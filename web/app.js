@@ -23,6 +23,7 @@ let replySource;
 let playbackStartedAt;
 let speechStarted = false;
 let turnId = 0;
+let sessionActive = false;
 const playbackSamples = new Uint8Array(256);
 let requestController;
 let leaving = false;
@@ -70,16 +71,10 @@ function render(nextState, title, detail, error = false) {
   recordButton.title = `${title}. ${detail}`;
   if (state !== 'playing') cancelAnimationFrame(playbackFrame);
   const busy = state === 'requesting' || state === 'processing';
-  recordButton.disabled = state === 'processing';
+  recordButton.disabled = false;
   recordButton.setAttribute('aria-busy', String(busy));
-  recordButton.setAttribute('aria-pressed', String(['requesting', 'recording', 'playing'].includes(state)));
-  recordLabel.textContent = {
-    idle: 'Start talking',
-    requesting: 'Stop',
-    recording: 'Stop',
-    processing: 'Creating your reply…',
-    playing: 'Stop reply',
-  }[state];
+  recordButton.setAttribute('aria-pressed', String(sessionActive));
+  recordLabel.textContent = sessionActive ? 'Stop' : 'Start talking';
   waveformState.textContent = {
     idle: 'YOUR VOICE',
     requesting: 'YOUR VOICE',
@@ -87,12 +82,12 @@ function render(nextState, title, detail, error = false) {
     processing: 'MAKING A LITTLE MAGIC',
     playing: 'THEIR VOICE',
   }[state];
-  for (const button of personaButtons) button.disabled = state !== 'idle';
+  for (const button of personaButtons) button.disabled = sessionActive;
   if (state !== 'recording' && state !== 'playing') paintWaveform();
 }
 
 function selectPersona(button) {
-  if (state !== 'idle') return;
+  if (sessionActive) return;
   selected = button;
   for (const candidate of personaButtons) {
     const active = candidate === selected;
@@ -131,6 +126,7 @@ function microphoneError(error) {
 }
 
 function showError(message) {
+  void cancelRecording();
   render('idle', 'Let’s try that again', message, true);
 }
 
@@ -151,13 +147,11 @@ const recorder = new VoiceRecorder({
     if (state === 'recording') void finishRecording();
   },
   onError(error) {
-    void recorder.cancel();
-    clearReply();
     if (!leaving) showError(microphoneError(error));
   },
 });
 
-function clearReply() {
+function clearReply(closeContext = false) {
   cancelAnimationFrame(playbackFrame);
   if (replySource) {
     replySource.onended = null;
@@ -166,37 +160,40 @@ function clearReply() {
     replySource = undefined;
   }
   replySamples = undefined;
-  const context = playbackContext;
-  playbackContext = undefined;
-  if (context && context.state !== 'closed') void context.close();
+  if (closeContext) {
+    const context = playbackContext;
+    playbackContext = undefined;
+    if (context && context.state !== 'closed') void context.close();
+  }
 }
 
-async function startRecording() {
-  const thisTurn = ++turnId;
+async function startRecording(thisTurn) {
+  if (leaving || !sessionActive || thisTurn !== turnId) return;
   speechStarted = false;
   render('requesting', 'One little permission…', 'Allow microphone access to begin, or press Stop to cancel.');
   clearReply();
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) throw new Error('This browser does not support voice conversations.');
-    // Unlock playback in the Start gesture, before awaiting microphone or network access.
-    playbackContext = new AudioContextClass();
+    // Reuse the context unlocked by Start for every automatic reply.
+    if (!playbackContext) playbackContext = new AudioContextClass();
     await Promise.all([playbackContext.resume(), recorder.start()]);
     if (leaving || thisTurn !== turnId) return;
     render('recording', `Listening for your voice, ${selected.dataset.name} is ready`, 'Start speaking. A short silence sends your turn automatically; Stop discards it.');
   } catch (error) {
     if (thisTurn !== turnId) return;
-    await recorder.cancel();
-    clearReply();
     if (!leaving) showError(microphoneError(error));
   }
 }
 
 async function cancelRecording() {
+  sessionActive = false;
   ++turnId;
+  requestController?.abort();
+  requestController = undefined;
   const canceled = recorder.cancel();
-  clearReply();
-  render('idle', 'Recording stopped', 'Your captured audio was discarded and was not sent.');
+  clearReply(true);
+  render('idle', 'Conversation stopped', 'Listening, requests, and playback have stopped.');
   await canceled;
 }
 
@@ -206,6 +203,7 @@ async function finishRecording() {
   const persona = selected.dataset.persona;
   const name = selected.dataset.name;
   render('processing', `${name} is thinking…`, 'Turning your words into a reply. The microphone is off.');
+  let controller;
   try {
     const audio = await recorder.stop();
     if (leaving || thisTurn !== turnId) return;
@@ -214,8 +212,9 @@ async function finishRecording() {
     form.append('audio_file', audio, 'recording.wav');
     form.append('persona', persona);
     form.append('language_code', 'indic-auto');
-    requestController = new AbortController();
-    const response = await fetch('/talk', { method: 'POST', body: form, signal: requestController.signal });
+    controller = new AbortController();
+    requestController = controller;
+    const response = await fetch('/talk', { method: 'POST', body: form, signal: controller.signal });
     if (!response.ok) {
       let message = `The request failed (${response.status}). Please try again.`;
       try {
@@ -231,6 +230,7 @@ async function finishRecording() {
     if (leaving || thisTurn !== turnId) return;
     const context = playbackContext;
     const decoded = await context.decodeAudioData(reply);
+    if (leaving || thisTurn !== turnId) return;
     await context.resume();
     if (leaving || thisTurn !== turnId) return;
     replySamples = decoded.getChannelData(0);
@@ -241,33 +241,37 @@ async function finishRecording() {
     source.onended = () => {
       if (leaving || thisTurn !== turnId) return;
       clearReply();
-      render('idle', 'Your turn, whenever you’re ready', 'Press Start talking for a new conversation.');
+      void startRecording(thisTurn);
     };
     playbackStartedAt = context.currentTime;
     source.start();
     replySource = source;
-    render('playing', `${name} is speaking`, 'Press Stop reply to end playback. The microphone is off.');
+    render('playing', `${name} is speaking`, 'Listening resumes automatically after this reply. Stop ends the conversation.');
     paintReplyWaveform();
   } catch (error) {
     if (thisTurn !== turnId) return;
     await recorder.cancel();
     clearReply();
-    if (!leaving) {
-      showError(error instanceof TypeError
-        ? 'Could not reach the server. Check your connection and try again.'
-        : microphoneError(error));
+    const message = error instanceof TypeError
+      ? 'Could not reach the server. Check your connection and try again.'
+      : microphoneError(error);
+    if (!leaving && sessionActive) {
+      await startRecording(thisTurn);
+      if (sessionActive && thisTurn === turnId && state === 'recording') {
+        recordingHint.textContent = message;
+        recordingHint.dataset.error = 'true';
+      }
     }
   } finally {
-    if (thisTurn === turnId) requestController = undefined;
+    if (requestController === controller) requestController = undefined;
   }
 }
 
 recordButton.addEventListener('click', () => {
-  if (state === 'idle') void startRecording();
-  else if (state === 'recording' || state === 'requesting') void cancelRecording();
-  else if (state === 'playing') {
-    clearReply();
-    render('idle', 'Reply stopped', 'Press Start talking when you’re ready for another conversation.');
+  if (sessionActive) void cancelRecording();
+  else {
+    sessionActive = true;
+    void startRecording(++turnId);
   }
 });
 
@@ -291,10 +295,12 @@ void checkHealth();
 
 window.addEventListener('pagehide', () => {
   leaving = true;
+  sessionActive = false;
   ++turnId;
   void recorder.cancel();
   requestController?.abort();
-  clearReply();
+  requestController = undefined;
+  clearReply(true);
 });
 window.addEventListener('pageshow', event => {
   if (event.persisted) {
