@@ -1,5 +1,8 @@
 import { VoiceRecorder } from './recorder.js';
 
+const sessionId = sessionStorage.getItem('talk-toon-session-id') || crypto.randomUUID();
+sessionStorage.setItem('talk-toon-session-id', sessionId);
+
 const grid = document.querySelector('#persona-grid');
 const personaButtons = [...grid.querySelectorAll('[data-persona]')];
 const recordButton = document.querySelector('#record-button');
@@ -211,6 +214,7 @@ async function finishRecording() {
     const form = new FormData();
     form.append('audio_file', audio, 'recording.wav');
     form.append('persona', persona);
+    form.append('session_id', sessionId);
     form.append('language_code', 'indic-auto');
     controller = new AbortController();
     requestController = controller;

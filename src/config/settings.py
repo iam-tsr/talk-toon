@@ -13,5 +13,12 @@ class LLMSettings(BaseSettings):
     base_url: str
     model: str
 
+class MongoDBSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="MONGO_", extra="ignore")
+
+    uri: str
+    database: str
+
 gnani_settings = GnaniSettings()
 llm_settings = LLMSettings()
+mongodb_settings = MongoDBSettings()

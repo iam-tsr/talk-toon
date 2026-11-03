@@ -100,16 +100,6 @@ h1>span:first-child {
   color: var(--accent);
 }
 
-.brand-spark {
-  position: absolute;
-  right: -23px;
-  top: 2px;
-  color: var(--amber);
-  font-size: 24px;
-  font-weight: 400;
-  line-height: 1;
-}
-
 .brand-description {
   margin: 13px 0 0;
   color: var(--muted);
@@ -434,12 +424,6 @@ h2 {
   font-weight: 500;
 }
 
-.small-star {
-  margin-left: 4px;
-  color: var(--amber);
-  font-size: 12px;
-}
-
 .waveform-frame {
   width: min(100%, 640px);
   margin: 0 auto;
@@ -720,12 +704,6 @@ body[data-state="processing"] .record-icon::after {
 
   h1 {
     font-size: 45px;
-  }
-
-  .brand-spark {
-    top: 3px;
-    right: -20px;
-    font-size: 21px;
   }
 
   .brand-description {

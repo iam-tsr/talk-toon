@@ -1,4 +1,5 @@
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 from .config import llm_settings
 
@@ -7,13 +8,10 @@ client = OpenAI(
     base_url=llm_settings.base_url
 )
 
-def reasoning(system_prompt: str, user_prompt: str):
+def reasoning(messages: list[ChatCompletionMessageParam]) -> str | None:
     response = client.chat.completions.create(
         model=llm_settings.model,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
+        messages=messages,
         temperature=1,
         max_tokens=100,
     )

@@ -22,3 +22,9 @@ __all__ = [
     "patalu_prompt",
     "shinchan_prompt"
 ]
+
+
+PERSONAS = {
+    name.removesuffix("_prompt").replace("_", "-"): globals()[name]
+    for name in __all__
+}
