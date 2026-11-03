@@ -8,6 +8,7 @@ from uuid import UUID
 import httpx
 import requests
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from openai import OpenAIError
 from pymongo.errors import PyMongoError
@@ -16,8 +17,15 @@ from .memory import chat
 from .persona import PERSONAS
 from .stt import transcribe
 from .tts import clone_voice_tts
+from .config import allowed_origins_settings
 
 app = FastAPI(title="Talk Toon")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins_settings.allowed_origins,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
 
 EMBEDDINGS_DIR = Path(__file__).resolve().parent / "voice-embed"
 

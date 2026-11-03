@@ -19,6 +19,13 @@ class MongoDBSettings(BaseSettings):
     uri: str
     database: str
 
+class AllowedOriginsSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="CORS_", extra="ignore")
+
+    allowed_origins: list[str]
+    
+
 gnani_settings = GnaniSettings()
 llm_settings = LLMSettings()
 mongodb_settings = MongoDBSettings()
+allowed_origins_settings = AllowedOriginsSettings()
