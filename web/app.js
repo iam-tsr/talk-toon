@@ -1,5 +1,7 @@
 import { VoiceRecorder } from './recorder.js';
 
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+
 const sessionId = sessionStorage.getItem('talk-toon-session-id') || crypto.randomUUID();
 sessionStorage.setItem('talk-toon-session-id', sessionId);
 
@@ -218,7 +220,7 @@ async function finishRecording() {
     form.append('language_code', 'indic-auto');
     controller = new AbortController();
     requestController = controller;
-    const response = await fetch('/talk', { method: 'POST', body: form, signal: controller.signal });
+    const response = await fetch(`${apiBaseUrl}/talk`, { method: 'POST', body: form, signal: controller.signal });
     if (!response.ok) {
       let message = `The request failed (${response.status}). Please try again.`;
       try {
@@ -284,7 +286,7 @@ render('idle', 'Ready when you are', 'Your microphone stays off until you press 
 
 async function checkHealth() {
   try {
-    const response = await fetch('/health', { signal: AbortSignal.timeout(5000) });
+    const response = await fetch(`${apiBaseUrl}/health`, { signal: AbortSignal.timeout(5000) });
     if (!response.ok) throw new Error('Unhealthy API');
     const result = await response.json();
     if (result.status !== 'ok') throw new Error('Unhealthy API');
