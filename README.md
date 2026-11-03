@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="Public/talk-toon-full.svg" alt="Talk Toon" width="440">
+<img src="Public/talktoon-full-white.svg" alt="Talk Toon" width="440">
 
 ### Familiar faces. Unscripted conversations.
 
@@ -66,15 +66,8 @@ Run the following commands from the repository root.
 
 Create a `.env` file in the repository root:
 
-```dotenv
-GNANI_API_KEY=your-gnani-api-key
-
-LLM_API_KEY=your-llm-api-key
-LLM_BASE_URL=https://api.openai.com/v1
-LLM_MODEL=gpt-4o-mini
-
-MONGO_URI=mongodb://127.0.0.1:27017
-MONGO_DATABASE=talk_toon
+```bash
+cp .env.example .env
 ```
 
 The LLM values above use OpenAI as an example; set the URL, model, and key for your chosen compatible provider. For a hosted MongoDB deployment, replace `MONGO_URI` with its connection string and allow the backend to connect.
@@ -92,20 +85,6 @@ In a second terminal:
 ```bash
 npm run dev
 ```
-
-Open **http://127.0.0.1:5173**. Vite proxies `/talk` and `/health` to the API on port `8000`.
-
-### 5. Have a conversation
-
-1. Choose a character. Arrow keys also navigate the character grid.
-2. Press **Start talking** and allow microphone access.
-3. Speak in Hindi, then pause for about **1.2 seconds** to send your turn.
-4. Listen to the character's reply. Recording resumes automatically afterward.
-5. Press **Stop** whenever you're finished, or before switching characters.
-
-Every recording is capped at **30 seconds**. Silence before speech is not uploaded; a short pre-roll helps preserve the beginning of your words. Background noise can affect speech detection, so headphones and a quiet room help.
-
-> Microphone access requires **HTTPS or localhost**. Opening the app over a plain HTTP LAN address will not enable recording.
 
 ## How it works
 
@@ -139,8 +118,6 @@ The frontend is plain JavaScript built with Vite. The backend uses FastAPI, Gnan
 This is a turn-based voice pipeline, not a streaming or simultaneous-listening conversation. Transcription is currently configured for `hi-IN`.
 
 ## API
-
-Interactive API documentation: **http://127.0.0.1:8000/docs**.
 
 ### `GET /health`
 
